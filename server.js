@@ -1,50 +1,136 @@
 const inquirer = require('inquirer');
 const Query = require('./lib/Query');
 
-const express = require("express");
-const routes = require("./controllers");
-const sequelize = require("./config/connection");
-const path = require('path');
-// helper functions
-const helpers = require("./utils/helpers");
-
-// handlebars
-const exphbs = require("express-handlebars");
-const hbs = exphbs.create({ helpers });
-
-// session (connects session to sequelize Database)
-const session = require("express-session");
-require("dotenv").config();
-
-const app = express();
-const PORT = process.env.PORT || 3001;
-
-const SequelizeStore = require("connect-session-sequelize")(session.Store);
-
-// creating session
-const sess = {
-  secret: "super secret",
-  cookie: {},
-  resave: false,
-  saveUninitialized: true,
-  store: new SequelizeStore({
-    db: sequelize,
-  }),
+//Add employee to the database
+const employeePrompts = async (titles, managers) => {
+    
+  const { firstName, lastName, roleId, managerId } = await inquirer.prompt([
+      {
+          type: "input",
+          name: "firstName",
+          message: "What is the employee's first name?"
+      },
+      {
+          type: "input",
+          name: "lastName",
+          message: "What is the employee's last name?"
+      },
+      {
+          type: "list",
+          name: "roleId",
+          message: "What is the employee's role?",
+          choices: titles
+      },
+      {
+          type: "list",
+          name: "managerId",
+          message: "Who is the employee's manager?",
+          choices: managers
+      }
+  ]);
+  const query = new Query();
+  query.addEmployee(firstName, lastName, roleId, managerId, startApplication);
 };
 
-app.use(session(sess));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
+// Add a new role
+const rolePrompts = async (departments) => {
+  const {title, salary, department} = await inquirer.prompt([
+      {
+          type: "input",
+          name: "title",
+          message: "What is the role of the employee?",
+      },
+      {
+          type: "input",
+          name: "salary",
+          message: "What is the salary?"
+      },
+      {
+          type: "list",
+          name: "department",
+          message: "Which department does the role belong to?",
+          choices: departments
+      }
+  ]);
+  const query = new Query();
+  query.addRole(title, salary, department, startApplication);
+  
+};
 
+// Add a department
+const departmentPrompts = (query, startApplication) => {
+  return inquirer.prompt([
+      {
+          type: "input",
+          name: "name",
+          message: "What is the name of the department?"
+      }
+  ]).then(({name}) => {
+      query.addDepartment(name, startApplication);
+  })
+};
 
-app.engine("handlebars", hbs.engine);
-app.set("view engine", "handlebars");
+const updateRolePrompts = async (employees, titles) => {
+  console.log(employees);
+  const {employee, role} = await inquirer.prompt([
+      {
+          type: "list",
+          name: "employee",
+          message: "Which employee's role do you want to update?",
+          choices: employees
+      },
+      {
+          type: "list",
+          name: "role",
+          message: "Which role do you want to assign the selected employee?",
+          choices: titles
+      }
+  ]);
+  const query = new Query();
+  query.updateEmployeeRole(role, employee, startApplication);
+ 
+}
 
-// turn on routes
-app.use(routes);
+const startApplication = async () => {
+ 
+ const { choice } = await inquirer.prompt([
+      {
+          type: "list",
+          name: "choice",
+          message: "What would you like to do?",
+          choices: [
+              "Add Employee",
+              "Update Employee Role",
+              "View All Roles",
+              "Add Role",
+              "View All Departments",
+              "Add Department",
+              "View All Employees",
+              "Quit"
+          ]
+      }
+  ]);
+  const query = new Query();
+  if (choice === "Add Employee") {
+      query.addEmployeeChoices(employeePrompts);
+  } else if (choice === "Update Employee Role") {
+      query.viewUpdateRoleChoices(updateRolePrompts);
+  } else if (choice === "View All Roles") {
+      query.viewAllRoles(startApplication);
+  } else if (choice === "Add Role") {
+      query.viewDepartmentChoices(rolePrompts);
+  } else if (choice === "View All Departments") {
+      query.viewDepartments(startApplication);
+  } else if (choice === "Add Department") {
+      departmentPrompts(query, startApplication);
+  }
+  else if (choice === "View All Employees") {
+      query.viewAllEmployees(startApplication);
+  }
+  else {
+      console.log("Have a nice day!");
+      return;
+  }
+};
 
-// turn on connection to db and server
-sequelize.sync({ force: false }).then(() => {
-  app.listen(PORT, () => console.log("Now listening on http://localhost:"+PORT));
-});
+startApplication();
