@@ -1,5 +1,6 @@
 const inquirer = require('inquirer');
 const Query = require('./lib/Query');
+const mysql = require('mysql2');
 
 //Add employee to the database
 const employeePrompts = async (titles, managers) => {
