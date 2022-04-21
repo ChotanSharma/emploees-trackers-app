@@ -38,6 +38,7 @@ To run this application, the users need to download npm packages, npm inquirer, 
 ## Usage 
 If a user clones the repo and install the necessary modules, the user only needs to do "npm start" on the command line. The users can get associated data relationship established by sql database and content management systems interface to view and interact with data. 
 
+Video : [Screencastify](https://drive.google.com/file/d/1M5_nNgd-QXPNem35ZxW55m94hEfZKXjv/view)
 
 ## License 
 This project is license under MIT
